@@ -27,8 +27,35 @@ resource "packet_device" "tf-provisioner" {
 }
 
 # Create a device and add it to tf_project_1
-resource "packet_device" "tf-worker" {
-  hostname         = "tf-worker"
+resource "packet_device" "tf-controller" {
+  hostname         = "tf-controller"
+  plan             = "c2.medium.x86"
+  facilities       = ["sjc1"]
+  operating_system = "custom_ipxe"
+  ipxe_script_url  = "https://boot.netboot.xyz"
+  always_pxe       = "true"
+  billing_cycle    = "hourly"
+  project_id       = local.project_id
+  network_type     = "layer2-individual"
+}
+
+
+# Create a device and add it to tf_project_1
+resource "packet_device" "tf-worker1" {
+  hostname         = "tf-worker1"
+  plan             = "c2.medium.x86"
+  facilities       = ["sjc1"]
+  operating_system = "custom_ipxe"
+  ipxe_script_url  = "https://boot.netboot.xyz"
+  always_pxe       = "true"
+  billing_cycle    = "hourly"
+  project_id       = local.project_id
+  network_type     = "layer2-individual"
+}
+
+# Create a device and add it to tf_project_1
+resource "packet_device" "tf-worker2" {
+  hostname         = "tf-worker2"
   plan             = "c2.medium.x86"
   facilities       = ["sjc1"]
   operating_system = "custom_ipxe"
@@ -47,8 +74,22 @@ resource "packet_port_vlan_attachment" "provisioner" {
 }
 
 # Attach VLAN to worker
-resource "packet_port_vlan_attachment" "worker" {
-  device_id = packet_device.tf-worker.id
+resource "packet_port_vlan_attachment" "controller" {
+  device_id = packet_device.tf-controller.id
+  port_name = "eth0"
+  vlan_vnid = packet_vlan.provisioning-vlan.vxlan
+}
+
+# Attach VLAN to worker
+resource "packet_port_vlan_attachment" "worker1" {
+  device_id = packet_device.tf-worker1.id
+  port_name = "eth0"
+  vlan_vnid = packet_vlan.provisioning-vlan.vxlan
+}
+
+# Attach VLAN to worker
+resource "packet_port_vlan_attachment" "worker2" {
+  device_id = packet_device.tf-worker2.id
   port_name = "eth0"
   vlan_vnid = packet_vlan.provisioning-vlan.vxlan
 }
@@ -57,6 +98,14 @@ output "provisioner_ip" {
   value = "${packet_device.tf-provisioner.network[0].address}"
 }
 
-output "worker_mac_addr" {
-  value = "${packet_device.tf-worker.ports[1].mac}"
+output "controller_mac_addr" {
+  value = "${packet_device.tf-controller.ports[1].mac}"
+}
+
+output "worker1_mac_addr" {
+  value = "${packet_device.tf-worker1.ports[1].mac}"
+}
+
+output "worker2_mac_addr" {
+  value = "${packet_device.tf-worker2.ports[1].mac}"
 }
